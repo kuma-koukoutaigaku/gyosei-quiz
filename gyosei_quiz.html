@@ -136,6 +136,47 @@ header .sub {
   color: #888;
 }
 
+/* 読み上げ */
+.speak-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.speak-btn {
+  padding: 8px 16px;
+  border: 1px solid #1a1a2e;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.speak-btn.speaking {
+  background: #e05252;
+  border-color: #e05252;
+}
+
+.auto-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auto-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1a1a2e;
+}
+
 /* プログレス */
 .progress-wrap {
   margin-bottom: 12px;
@@ -470,6 +511,15 @@ header .sub {
     <button class="nav-btn" onclick="goNext()">次 &gt;</button>
   </div>
 
+  <!-- 読み上げ -->
+  <div class="speak-row">
+    <button class="speak-btn" id="speakBtn" onclick="speakCurrent()">読み上げ</button>
+    <label class="auto-toggle">
+      <input type="checkbox" id="autoReadChk" checked onchange="toggleAuto()">
+      <span>自動読み上げ</span>
+    </label>
+  </div>
+
   <!-- ======== 多肢選択式 ======== -->
   <div id="takiSection">
 
@@ -615,6 +665,7 @@ function updateNavCount() {
 
 // ======== 多肢選択式 ========
 function loadTaki(idx) {
+  stopSpeak();
   takiIdx = idx;
   updateNavCount();
   const q = filteredTaki[idx];
@@ -634,6 +685,7 @@ function loadTaki(idx) {
   updateProgress(q);
   updateActiveBlank(q);
   renderChoices(q);
+  autoSpeak();
 }
 
 function shuffle(arr) {
@@ -680,6 +732,7 @@ function renderChoices(q) {
 
 function selectAnswer(choiceText, q) {
   if (current >= q.blanks.length) return;
+  stopSpeak();
   answers[current] = choiceText;
 
   const b = q.blanks[current];
@@ -731,6 +784,7 @@ function showTakiResult(q) {
 
 // ======== 記述式 ========
 function loadKijutsu(idx) {
+  stopSpeak();
   kijutsuIdx = idx;
   updateNavCount();
   const k = filteredKijutsu[idx];
@@ -742,11 +796,89 @@ function loadKijutsu(idx) {
   document.getElementById('revealBtn').classList.remove('hidden');
   document.getElementById('answerBox').classList.add('hidden');
   document.getElementById('answerText').textContent = k.modelAnswer || '（解答データなし）';
+  autoSpeak();
 }
 
 function revealAnswer() {
   document.getElementById('revealBtn').classList.add('hidden');
   document.getElementById('answerBox').classList.remove('hidden');
+}
+
+// ======== 音声読み上げ ========
+const ttsOK = ('speechSynthesis' in window);
+let autoRead = true;
+let speaking = false;
+
+// 問題文を読み上げ用テキストに変換。
+// 空欄は、未回答ならラベル（ア/イ…）、回答済みなら入った答えを読む。
+function buildTakiReadText() {
+  const root = document.getElementById('qText');
+  let out = '';
+  function walk(node) {
+    node.childNodes.forEach(function(c) {
+      if (c.nodeType === 3) {
+        out += c.textContent;
+      } else if (c.nodeType === 1) {
+        if (c.classList && c.classList.contains('blank')) {
+          if (c.classList.contains('answered')) {
+            out += '、' + c.querySelector('.bl-ans').textContent + '、';
+          } else {
+            out += '、' + c.getAttribute('data-label') + '、';
+          }
+        } else if (c.tagName === 'BR') {
+          out += '。';
+        } else {
+          walk(c);
+        }
+      }
+    });
+  }
+  walk(root);
+  return out;
+}
+
+function currentReadText() {
+  if (mode === 'taki') return buildTakiReadText();
+  return document.getElementById('kijutsuProblem').textContent;
+}
+
+function updateSpeakBtn() {
+  const b = document.getElementById('speakBtn');
+  if (!b) return;
+  b.textContent = speaking ? '停止' : '読み上げ';
+  b.classList.toggle('speaking', speaking);
+}
+
+function stopSpeak() {
+  if (ttsOK) speechSynthesis.cancel();
+  speaking = false;
+  updateSpeakBtn();
+}
+
+function speakCurrent() {
+  if (!ttsOK) return;
+  if (speaking) { stopSpeak(); return; }
+  const text = currentReadText();
+  if (!text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = 1.0;
+  u.onend = function() { speaking = false; updateSpeakBtn(); };
+  u.onerror = function() { speaking = false; updateSpeakBtn(); };
+  speaking = true;
+  updateSpeakBtn();
+  speechSynthesis.speak(u);
+}
+
+// 問題を開いたときの自動読み上げ
+function autoSpeak() {
+  if (autoRead && ttsOK) speakCurrent();
+}
+
+function toggleAuto() {
+  autoRead = document.getElementById('autoReadChk').checked;
+  if (!autoRead) stopSpeak();
 }
 
 // 初期化
