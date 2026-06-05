@@ -189,13 +189,16 @@ header .sub {
 .blank {
   position: relative;
   display: inline-block;
-  vertical-align: bottom;
+  vertical-align: middle;
   white-space: nowrap;
   text-align: center;
-  padding: 0 2px;
-  border-bottom: 2px solid #aaa;
+  padding: 1px 6px;
+  margin: 0 1px;
+  border: 1.5px solid #bbb;
+  border-radius: 5px;
+  background: #f4f4f6;
   font-weight: 700;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 /* 本物の答え（透明で場所を確保。選択時に色を出すだけ） */
@@ -217,16 +220,16 @@ header .sub {
   color: #aaa;
 }
 
-.blank.active { border-color: #1a1a2e; }
+.blank.active { border-color: #1a1a2e; background: #e9e9f2; }
 .blank.active .bl-lab { color: #1a1a2e; }
 
 .blank.answered .bl-ans { visibility: visible; }
 .blank.answered .bl-lab { display: none; }
 
-.blank.correct { border-color: #2a9d5c; }
+.blank.correct { border-color: #2a9d5c; background: #e6f4ec; }
 .blank.correct .bl-ans { color: #1e7a44; }
 
-.blank.wrong { border-color: #e05252; }
+.blank.wrong { border-color: #e05252; background: #fbeaea; }
 .blank.wrong .bl-ans { color: #b93333; }
 
 /* 解答パネル */
