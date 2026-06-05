@@ -320,12 +320,28 @@ header .sub {
 }
 
 /* 選択肢エリア */
+/* 選択肢を画面下に固定（問題文をスクロールしても常に見える） */
 .select-area {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 640px;
+  bottom: 0;
+  max-height: 46vh;
+  overflow-y: auto;
   background: #fff;
-  border-radius: 14px;
-  padding: 16px;
-  border: 1px solid #e8e6e0;
-  margin-bottom: 12px;
+  border-top: 1px solid #ddd;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -3px 14px rgba(0,0,0,0.13);
+  padding: 0 16px calc(14px + env(safe-area-inset-bottom));
+  z-index: 50;
+  margin: 0;
+}
+
+/* 問題文の下に固定ドック分の余白を確保（解答中のみ） */
+#takiSection.dock-on {
+  padding-bottom: 48vh;
 }
 
 .select-label {
@@ -335,10 +351,16 @@ header .sub {
 }
 
 .current-q {
+  position: sticky;
+  top: 0;
+  background: #fff;
   font-size: 14px;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 12px;
+  padding: 12px 0 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  z-index: 1;
 }
 
 .choices {
@@ -351,7 +373,7 @@ header .sub {
   background: #f5f4f0;
   border: 1px solid #e0ddd6;
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 9px 10px;
   font-size: 12px;
   color: #222;
   cursor: pointer;
@@ -681,6 +703,7 @@ function loadTaki(idx) {
   document.getElementById('qText').innerHTML = q.questionHtml;
   document.getElementById('selectArea').classList.remove('hidden');
   document.getElementById('resultCard').classList.add('hidden');
+  document.getElementById('takiSection').classList.add('dock-on');
 
   updateProgress(q);
   updateActiveBlank(q);
@@ -757,6 +780,7 @@ function selectAnswer(choiceText, q) {
 
 function showTakiResult(q) {
   document.getElementById('selectArea').classList.add('hidden');
+  document.getElementById('takiSection').classList.remove('dock-on');
 
   const score = answers.filter((a, i) => a === q.blanks[i].answer).length;
   const msgs = ['もう一度！', 'あと少し！', 'いい感じ！', 'ほぼ完璧！', '満点！'];
